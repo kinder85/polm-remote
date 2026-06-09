@@ -1,0 +1,411 @@
+substitutions:
+  friendyname: "polm-one"
+  ir_receiver: "GPIO50"
+  ir_transmitter: "GPIO52"
+
+packages:   # as a list
+  - !include polm/substitution.yaml
+  
+  - !include polm/remote_button.yaml
+  - !include polm/lvgl.yaml 
+  - !include polm/common.yaml
+
+
+esphome:
+
+  name: "${friendyname}"
+  friendly_name: ${friendyname}
+  on_boot:
+     - priority: -100
+       then:
+         - light.turn_on:
+            id: display_backlight
+            brightness: ${default_brightness}
+         - wait_until: api.connected
+         - delay: 5s
+         - if:
+             condition:
+               switch.is_on: use_wake_word
+             then:
+               - voice_assistant.start_continuous:
+
+logger:
+  level: DEBUG
+esp32:
+  board: esp32-p4-evboard
+  cpu_frequency: 360MHz
+  flash_size: 16MB
+  framework:
+    type: esp-idf
+    advanced:
+      enable_idf_experimental_features: yes 
+      
+    sdkconfig_options:
+      #CONFIG_SPIRAM_XIP_FROM_PSRAM: "y"
+      # The on-board C6 network_adapter advertises streaming transport. Keeping
+      # the host in packet mode triggers an SDIO mode mismatch at boot.
+      CONFIG_ESP_HOSTED_SDIO_OPTIMIZATION_RX_STREAMING_MODE: "y"
+      # Hosted creates several default tasks. Their stacks are not DMA buffers;
+      # move them to PSRAM and keep internal memory for SDIO/I2S/MIPI DMA.
+      CONFIG_ESP_HOSTED_DFLT_TASK_FROM_SPIRAM: "y"
+
+
+psram:
+  mode: hex
+  speed: 200MHz
+
+preferences:
+  flash_write_interval: 5min
+
+esp32_hosted:
+  variant: ESP32C6
+  reset_pin: GPIO54
+  cmd_pin: GPIO19
+  clk_pin: GPIO18
+  d0_pin: GPIO14
+  d1_pin: GPIO15
+  d2_pin: GPIO16
+  d3_pin: GPIO17
+  active_high: true
+
+update:
+  - platform: esp32_hosted
+    id: update_c6
+    type: http
+    source: https://esphome.github.io/esp-hosted-firmware/manifest/esp32c6.json
+    update_interval: 12h
+
+
+
+
+
+ota:
+  - platform: esphome
+    password: "e5d4681f2b120aa614eda188a8cf1001"
+
+api:
+  encryption:
+    key: "pD3LSfblDHTq56pgLJecSgERqqc3YG+Xe/HhYGbtbns="
+  on_client_connected:
+    - globals.set:
+        id: homeassistant_ip
+        value: !lambda return client_address;
+    - wait_until:
+        condition:
+          api.connected:
+            state_subscription_only: true
+    
+
+
+output:
+  - id: gpio_backlight_pwm
+    platform: ledc
+    pin: 23
+   
+
+light:
+  - id: display_backlight
+    name: display_backlight
+    platform: monochromatic
+    output: gpio_backlight_pwm
+    default_transition_length: 0.5s
+    restore_mode: ALWAYS_ON
+  
+
+
+switch:
+  - platform: restart
+    name: Restart
+  - platform: template
+    name: Use wake word
+    id: use_wake_word
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    entity_category: config
+    on_turn_on:
+      - lambda: id(assist).set_use_wake_word(true);
+      - if:
+          condition:
+            not:
+              - voice_assistant.is_running
+          then:
+            - voice_assistant.start_continuous
+    on_turn_off:
+      - voice_assistant.stop
+      - lambda: id(assist).set_use_wake_word(false);
+  - platform: lvgl
+    id: switch_artist
+    widget: checkbox_artist
+    #name: LVGL switch
+    on_turn_on: 
+      then:
+        - switch.turn_off: switch_album
+        - switch.turn_off: switch_track
+  
+  - platform: lvgl
+    id: switch_album
+    widget: checkbox_album
+    on_turn_on: 
+      then:
+        - switch.turn_off: switch_artist
+        - switch.turn_off: switch_track
+  
+  - platform: lvgl
+    id: switch_track
+    widget: checkbox_track
+    on_turn_on: 
+      then:
+        - switch.turn_off: switch_artist
+        - switch.turn_off: switch_album
+  
+binary_sensor:
+  - platform: status
+    name: Status
+
+
+         
+  
+  - platform: homeassistant
+    id: remote_light
+    entity_id: ${light_salon}
+    trigger_on_initial_state: true
+    on_state:
+      then:
+        lvgl.widget.update:
+          id: light_btn
+          state:
+            checked: !lambda return x;
+
+
+spi:
+  clk_pin: GPIO33
+  miso_pin: GPIO31
+  mosi_pin: GPIO30
+
+rc522_spi: # or rc522_i2c
+  cs_pin: GPIO29
+  update_interval: 1s
+  on_tag:
+      then:
+       #- homeassistant.tag_scanned: !lambda 'return x;'
+        - mqtt.publish:
+            topic: rc522/tag
+            payload: !lambda 'return x;'
+        - text_sensor.template.publish:
+            id: rfid_tag
+            state: !lambda 'return x;'
+
+
+
+
+text_sensor:
+  
+      
+  
+  - platform: template
+    name: "RFID Tag"
+    id: rfid_tag
+    on_value:
+      then:
+        - if:
+            condition:
+              lambda: !lambda 'return x == "${tag_gaming}";'
+            then:
+              - switch.turn_on: tv_switch0
+              
+        - if:
+            condition:
+              lambda: !lambda 'return x == "${tag_tv}";'
+            then:
+              - switch.turn_off: tv_switch0
+              
+              
+        - if:
+            condition:
+              lambda: !lambda 'return x == "${tag_clef}";'
+            then:
+              - switch.toggle: alarm_switch
+globals:
+  
+
+  - id: audio_mode
+    type: int
+    restore_value: no
+    initial_value: '0'
+    
+
+
+
+esp_ldo:
+  - channel: 3
+    voltage: 2.5V
+
+
+
+i2c:
+  id: i2c_bus
+  sda: 7
+  scl: 8
+  scan: false
+  frequency: 400kHz
+
+# Audio section
+audio_dac:
+  - platform: es8311
+    id: esp7311_dac
+    address: 0x18
+    i2c_id: i2c_bus
+
+i2s_audio:
+  - id: i2s_bus
+    i2s_lrclk_pin: GPIO10 # WS / LRCK
+    i2s_bclk_pin: GPIO12  # BCLK
+    i2s_mclk_pin: GPIO13  # ES8311 usually requires a Master Clock
+
+microphone:
+  - platform: i2s_audio
+    id: mic
+    i2s_audio_id: i2s_bus
+    i2s_din_pin: GPIO48  # Data In from the Codec
+    adc_type: external
+    pdm: false           # ES8311 uses standard I2S, not PDM
+    channel: left
+    sample_rate: 16000
+    bits_per_sample: 16bit
+sendspin:
+  id: sendspin_hub
+  task_stack_in_psram: true
+media_source:
+  - platform: audio_http
+    id: http_announcement_source
+    buffer_size: 262144
+  - platform: audio_http
+    id: http_media_source
+    buffer_size: 262144
+
+  - platform: sendspin
+    id: sendspin_media_source
+    #fixed_delay: 480 microseconds  # The AIC3204 DAC used, as configured, on the VPE delays audio by 480 microseconds
+speaker:
+  - platform: i2s_audio
+    id: es8311_hardware_out
+    i2s_audio_id: i2s_bus
+    i2s_dout_pin: GPIO9
+    dac_type: external
+    audio_dac: esp7311_dac
+    buffer_duration: 500ms
+  - platform: mixer
+    id: audio_mixer
+    output_speaker: es8311_hardware_out
+    source_speakers:
+      - id: spk_announcement
+      - id: spk_media
+  - platform: resampler
+    id: media_spk_resampling_input
+    output_speaker: spk_media
+  - platform: resampler
+    id: announcement_spk_resampling_input
+    output_speaker: spk_announcement
+media_player:
+  - platform: sendspin
+    id: player
+    name: Group
+  - platform: speaker_source
+    name: "XL Speaker"
+    id: xl_media_player
+    # This section is now mandatory for the 'speaker' platform
+    announcement_pipeline:
+      speaker: spk_announcement
+      sample_rate: 48000
+      format: FLAC
+      num_channels: 1
+      sources:
+        - http_announcement_source
+    media_pipeline:
+      speaker: spk_media
+      sample_rate: 48000
+      format: FLAC
+      num_channels: 2
+      sources:
+        
+        - http_media_source
+        - sendspin_media_source
+
+voice_assistant:
+  microphone: mic
+  use_wake_word: true
+  noise_suppression_level: 2
+  auto_gain: 31dBFS
+  volume_multiplier: 1.9
+  #speaker: big_speaker
+  media_player: xl_media_player
+  id: assist
+  on_listening:
+    - lvgl.widget.show: assist_obj
+    - lvgl.widget.update: 
+        id: assist_label
+        text_color: 0x3827F5
+
+  on_tts_start:
+   - lvgl.widget.update: 
+      id: assist_label
+      text_color: 0x27F546
+
+  on_tts_end:
+    #- media_player.play_media: !lambda return x;
+    - lvgl.widget.update: 
+        id: assist_label
+        text_color: 0xF55427
+    
+  on_end:
+    # Handle the "nevermind" case where there is no announcement
+      - delay: 500ms
+      - lvgl.widget.hide: assist_obj
+    
+
+
+
+display:
+  - platform: mipi_dsi
+    id: main_display
+    model: JC4880P443
+    #byte_order: little_endian
+    
+    #dimensions:
+      #width: ${screenwidth}
+      #height: ${screenheight}
+    
+touchscreen:
+  platform: gt911
+  i2c_id: i2c_bus
+  id: device_touchscreen
+  reset_pin: GPIO3
+  display: main_display
+  update_interval: 50ms
+  #transform: #This is for 90 degree display rotation
+    #swap_xy: false
+    #mirror_x: false
+    #mirror_y: false
+  on_update:
+    then:
+      - lambda: |-
+          if (touches.size() > 0) {
+            auto touch = touches[0];
+            ESP_LOGI("TOUCH", "X=%d Y=%d", touch.x, touch.y);
+          }
+  on_release:
+      - if:
+          condition: lvgl.is_paused
+          then:
+            - logger.log: "LVGL resuming"
+            - lvgl.resume:
+            - lvgl.widget.redraw:
+            - light.turn_on: display_backlight
+
+
+  
+
+
+
+
+
