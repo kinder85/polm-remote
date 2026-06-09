@@ -429,7 +429,11 @@ number:
     max_value: 180
     step: 10
     mode: box
-
+    on_value:
+      then:
+        - lvgl.spinbox.update:
+            id: spinbox_Screen_timeout2
+            value: !lambda return x;
 lvgl:
   rotation: 0
   buffer_size: 100%
@@ -614,15 +618,15 @@ lvgl:
                   - voice_assistant.start:
                       silence_detection: false
               
-                on_release:
-                  - voice_assistant.stop:
-                  - delay: 0.5s
-                  - if:
-                      condition:
-                        lambda: 'return id(audio_mode) == 1;'
-                      then:
+                #on_release:
+                  #- voice_assistant.stop:
+                  #- delay: 0.5s
+                  #- if:
+                      #condition:
+                        #lambda: 'return id(audio_mode) == 1;'
+                      #then:
 
-                        - switch.turn_on: use_wake_word
+                        #- switch.turn_on: use_wake_word
               - id: page_home
                 text: "\U000F07D1"
                 on_click:
