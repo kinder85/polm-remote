@@ -100,11 +100,11 @@ http_request:
 
 ota:
   - platform: esphome
-    password: "e5d4681f2b120aa614eda188a8cf1001"
+    password: ""
 
 api:
   encryption:
-    key: "pD3LSfblDHTq56pgLJecSgERqqc3YG+Xe/HhYGbtbns="
+    key: ""
   on_client_connected:
     - globals.set:
         id: homeassistant_ip
