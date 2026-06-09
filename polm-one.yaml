@@ -8,7 +8,7 @@ packages:   # as a list
   
   - !include polm/remote_button.yaml
   - !include polm/lvgl.yaml 
-  - !include polm/common.yaml
+  #- !include polm/common.yaml
 
 
 esphome:
@@ -74,7 +74,26 @@ update:
     type: http
     source: https://esphome.github.io/esp-hosted-firmware/manifest/esp32c6.json
     update_interval: 12h
-
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "${friendyname} Hotspot"
+    password: "${friendyname}_access"
+mqtt:
+  broker: ${ha_ip}
+  username: !secret mqtt_user
+  password: !secret mqtt_password
+  discovery: False # disable entity discovery
+  discover_ip: True # enable device discovery
+  on_connect:
+    - lvgl.label.update:
+            id: mqtt_label2
+            text: "Connected"
+web_server:
+  port: 80
+http_request:
+  verify_ssl: false
 
 
 
@@ -194,12 +213,86 @@ rc522_spi: # or rc522_i2c
         - text_sensor.template.publish:
             id: rfid_tag
             state: !lambda 'return x;'
+sensor:
+  - id: wifi_signal_db
+    name: WiFi Signal
+    platform: wifi_signal
+    update_interval: 60s
+    entity_category: diagnostic
 
+  - id: wifi_signal_strength
+    name: WiFi Strength
+    platform: copy
+    source_id: wifi_signal_db
+    filters:
+      - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
+    unit_of_measurement: "%"
+    entity_category: diagnostic
+    on_value:   
+      - lvgl.label.update:
+                  id: wifi_strength2
+                  
+                  text: !lambda return str_sprintf("%.0f", id(wifi_signal_strength).state);
+      - if:
+          condition:
+              lambda: !lambda 'return x >= 85 && x <= 100;'
+          then:
+              - lvgl.label.update:
+                  id: wifi_strength
+                  text_color: 0x00FF00
+                  text: "\U000F0928"
+          else:
+            - if:
+                condition:
+                    lambda: !lambda 'return x <= 10;'
+                then: 
+                  - lvgl.label.update:
+                      id: wifi_strength
+                      text_color: 0xFF1100
+                      text: "\U000F0920"
+                else: 
+                  - lvgl.label.update:
+                      id: wifi_strength
+                      text_color: 0xFF7B00
+                      text: "\U000F0922"
 
 
 
 text_sensor:
-  
+  - platform: version
+    name: "ESPHome Version"
+    hide_timestamp: true
+    hide_hash: true
+    on_value:
+        - lvgl.label.update:
+            id: version_label2
+            text: !lambda return x;
+  - platform: wifi_info
+    ip_address:
+      id: IP_Address
+      name: IP Address
+      entity_category: diagnostic
+      on_value:
+        - lvgl.label.update:
+            id: ip_label2
+            text: !lambda return x;
+
+    ssid:
+      id: SSID
+      name: Connected SSID
+      entity_category: diagnostic
+      on_value:
+        - lvgl.label.update:
+            id: ssid_label2
+            text: !lambda return x;
+    mac_address:
+      id: mac_address
+      name: Mac Address
+      entity_category: diagnostic
+      on_value:
+        - lvgl.label.update:
+            id: mac_label2
+            text: !lambda return x;  
       
   
   - platform: template
@@ -218,7 +311,11 @@ text_sensor:
               lambda: !lambda 'return x == "${tag_tv}";'
             then:
               - switch.turn_off: tv_switch0
-              
+        - if:
+            condition:
+              lambda: !lambda 'return x == "${tag_hifi}";'
+            then:
+              - lvgl.page.show: player_page
               
         - if:
             condition:
@@ -226,7 +323,8 @@ text_sensor:
             then:
               - switch.toggle: alarm_switch
 globals:
-  
+  - id: homeassistant_ip
+    type: std::string
 
   - id: audio_mode
     type: int
@@ -359,6 +457,11 @@ voice_assistant:
     
   on_end:
     # Handle the "nevermind" case where there is no announcement
+      - if:
+          condition:
+            lambda: 'return id(audio_mode) == 0;'
+          then:
+              - voice_assistant.stop:
       - delay: 500ms
       - lvgl.widget.hide: assist_obj
     
