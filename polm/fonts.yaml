@@ -1,0 +1,164 @@
+font:
+  - file: "gfonts://Montserrat"
+    id: montserrat_32
+    size: 32
+  
+  - file: "gfonts://Montserrat"
+    id: unscii_8
+    size: 8
+
+  - file: "DroidSans.ttf"
+    id: font1
+    size: 28
+    
+    extras:
+      - file: "materialdesignicons-webfont.ttf"
+        #id: font_weather_icon
+        #size: 100
+        glyphs: [
+          
+         "\U000F0594", # clear-night
+         "\U000F0590", # cloudy
+         "\U000F0F2F", # exceptional
+         "\U000F0591", # fog
+         "\U000F0592", # hail
+         "\U000F0593", # lightning
+         "\U000F067E", # lightning-rainy
+         "\U000F0595", # partlycloudy
+         "\U000F0596", # pouring
+         "\U000F0597", # rainy
+         "\U000F0598", # snowy
+         "\U000F067F", # snowy-rainy
+         "\U000F0599", # sunny
+         "\U000F059D", # windy
+         "\U000F059E", # windy-variant
+         "\U000F14E4", # sunny-off
+         "\U000F0454", # remote
+         "\U000F02D1", # mdi-heart
+         "\U000F05D4", # mdi-airplane-landing
+         "\U000F05A9", #wifi
+         "\U000F07D1", #home
+         "\U000F171A", #robot
+         "\U000F0425", #power
+         "\U000F0737", #up
+         "\U000F072E", #down
+         "\U000F0731", #left
+         "\U000F0734", #right
+         "\U000F1B97", #multimeda
+         "\U000F0335", #bulb
+         "\U000F075D", #v+
+         "\U000F075E", #v-
+         "\U000F0E1E", #check
+         "\U000F006E", #back_key
+         "\U000F040A", #play
+         "\U000F03E4", #pause
+         "\U000F04AD", #next
+         "\U000F04AE", #previous
+         ] 
+ 
+  - file: "DroidSans.ttf"
+    id: font2
+    size: 48
+    extras:
+      - file: "materialdesignicons-webfont.ttf"
+        glyphs: [
+         "\U000F0594", # clear-night
+         "\U000F0590", # cloudy
+         "\U000F0F2F", # exceptional
+         "\U000F0591", # fog
+         "\U000F0592", # hail
+         "\U000F0593", # lightning
+         "\U000F067E", # lightning-rainy
+         "\U000F0595", # partlycloudy
+         "\U000F0596", # pouring
+         "\U000F0597", # rainy
+         "\U000F0598", # snowy
+         "\U000F067F", # snowy-rainy
+         "\U000F0599", # sunny
+         "\U000F059D", # windy
+         "\U000F059E", # windy-variant
+         "\U000F14E4", # sunny-off
+         "\U000F0454", # remote
+         "\U000F02D1", # mdi-heart
+         "\U000F05D4", # mdi-airplane-landing
+         "\U000F05A9", #wifi
+         "\U000F07D1", #home
+         "\U000F171A", #robot
+         "\U000F0425", #power
+         "\U000F0737", #up
+         "\U000F072E", #down
+         "\U000F0731", #left
+         "\U000F0734", #right
+         "\U000F1B97", #multimeda
+         "\U000F0335", #bulb
+         "\U000F075D", #v+
+         "\U000F075E", #v-
+         "\U000F0E1E", #check
+         "\U000F006E", #back_key
+         "\U000F040A", #play
+         "\U000F03E4", #pause
+         "\U000F04AD", #next
+         "\U000F04AE", #previous
+         "\U000F1056", #party
+         "\U000F0951", #config
+         "\U000F0432", #qr
+         "\U000F011B", #cat
+         "\U000F1C8D", #search
+         "\U000F015A", #close
+         ] 
+  - file: "DroidSans.ttf"
+    id: font3
+    size: 100
+    extras:
+      - file: "materialdesignicons-webfont.ttf"
+            #id: font_weather_icon
+            #size: 100
+        glyphs: [
+         "\U000F0594", # clear-night
+         "\U000F0590", # cloudy
+         "\U000F0F2F", # exceptional
+         "\U000F0591", # fog
+         "\U000F0592", # hail
+         "\U000F0593", # lightning
+         "\U000F067E", # lightning-rainy
+         "\U000F0595", # partlycloudy
+         "\U000F0596", # pouring
+         "\U000F0597", # rainy
+         "\U000F0598", # snowy
+         "\U000F067F", # snowy-rainy
+         "\U000F0599", # sunny
+         "\U000F059D", # windy
+         "\U000F059E", # windy-variant
+         "\U000F14E4", # sunny-off
+         "\U000F0454", # remote
+         "\U000F02D1", # mdi-heart
+         "\U000F05D4", # mdi-airplane-landing
+         "\U000F05A9", #wifi
+         "\U000F07D1", #home
+         "\U000F171A", #robot
+         "\U000F0425", #power
+         "\U000F0737", #up
+         "\U000F072E", #down
+         "\U000F0731", #left
+         "\U000F0734", #right
+         "\U000F1B97", #multimeda
+         "\U000F0335", #bulb
+         "\U000F075D", #v+
+         "\U000F075E", #v-
+         "\U000F0E1E", #check
+         "\U000F006E", #back_key
+         "\U000F040A", #play
+         "\U000F03E4", #pause
+         "\U000F04AD", #next
+         "\U000F04AE", #previous
+         "\U000F05AA", #wifi off
+         "\U000F0920", #wifi 1
+         "\U000F0922", #wifi 2
+         "\U000F0928", #wifi 3
+         ]    
+  - file: "Roboto-Condensed-Regular.ttf"
+    id: font4
+    size: 28
+    glyphs: [
+          0123456789aAáÁeEéÉBCDFGHIJKLMNPQRSTOWXYZ,
+          (,),+,-,_,.,°,•,µ,]

@@ -1,0 +1,2035 @@
+packages:
+  - !include script.yaml
+  - !include weather.yaml
+  - !include fonts.yaml
+api:
+  on_client_connected:
+    - lvgl.widget.show: lbl_hastatus
+    - delay: 2s
+    - if:
+            condition:
+              lambda: !lambda 'return id(rasp_media).state == "playing";'
+            then:
+              - lvgl.slider.update:
+                  id: slider_vol
+                  value: !lambda return (id(media_player_volume).state * 100);
+            else:
+              - if:
+                  condition:
+                    lambda: !lambda 'return id(tv_media).state == "playing" && id(rasp_media).state == "idle" ;'
+                  then:
+
+                    - lvgl.slider.update:
+                        id: slider_vol
+                        value: !lambda return (id(tv_player_volume).state * 100);
+                  else:
+
+                    - lvgl.slider.update:
+                        id: slider_vol
+                        value: !lambda return (id(media_player_volume).state * 100);
+    - if:
+              condition:
+                lambda: !lambda 'return id(rasp_media).state == "playing";'
+              then:
+                - lvgl.label.update:
+                    id: play_label
+                    text: "\U000F03E4"
+              
+    - if:
+                  condition:
+                    lambda: !lambda 'return id(rasp_img).state == "${ha_adress}None";'
+                  then:
+                    #- online_image.set_url:
+                        #id: fallback_playing_image
+                        #url: https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/JPEG_example_flower.jpg/330px-JPEG_example_flower.jpg
+                    - lvgl.widget.hide: album_art_widget
+                    - lvgl.widget.show: album_art_widget2
+
+                  
+                  else:
+                    - lvgl.widget.show: album_art_widget
+                    - lvgl.widget.hide: album_art_widget2
+                    - online_image.set_url:
+                        id: fallback_playing_image
+                        url: !lambda return id(rasp_img).state ; 
+    - lvgl.label.update:
+                    id: title_label
+                    text: !lambda return id(rasp_title).state ;   
+    - lvgl.label.update:
+                    id: artist_label
+                    text: !lambda return id(rasp_artist).state ;  
+    - lvgl.label.update:
+                    id: album_label
+                    text: !lambda return id(rasp_album).state ;     
+  on_client_disconnected:
+    - if:
+        condition:
+          lambda: 'return (0 == client_info.find("Home Assistant "));'
+        then:
+          - lvgl.widget.hide: lbl_hastatus
+online_image:
+  - url: https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/JPEG_example_flower.jpg/330px-JPEG_example_flower.jpg
+    format: JPEG
+    id: fallback_playing_image
+    resize: 300x300
+    type: RGB565
+    on_download_finished:
+      - lvgl.image.update:
+          id: album_art_widget
+          src: fallback_playing_image
+image:
+  - file: "img/JPEG_example_flower.jpg"
+    type: RGB565
+    id: flower_image
+    resize: 300x300
+  - file: "img/wifi_qr.jpg"
+    type: RGB565
+    id: wifi_qr
+    resize: 400x400
+text_sensor:
+  - platform: homeassistant
+    id: rasp_media
+    name: "rasp Media State"
+    entity_id: ${hifi_salon}
+    on_value:
+      then:
+        - if:
+            condition:
+              lambda: !lambda 'return x == "playing";'
+            then:
+              - lvgl.label.update:
+                  id: play_label
+                  text: "\U000F03E4"
+            else:
+              - lvgl.label.update:
+                  id: play_label
+                  text: "\U000F040A"
+  - platform: homeassistant
+    id: tv_media
+    name: "tv Media State"
+    entity_id: ${tv_salon2}
+    on_value:
+      then:
+        - if:
+            condition:
+              lambda: !lambda 'return x == "playing";'
+            then:
+              - lvgl.label.update:
+                  id: play_label
+                  text: "\U000F03E4"
+            else:
+              - lvgl.label.update:
+                  id: play_label
+                  text: "\U000F040A"
+  - platform: homeassistant
+    id: rasp_img
+    name: "hifi Media img"
+    entity_id: ${hifi_salon}
+    attribute: entity_picture_local
+    filters: 
+      - prepend: "${ha_adress}"
+    on_value:     
+      - if:           
+          condition:
+                    lambda: !lambda 'return x == "${ha_adress}None";'
+          then:
+                    #- online_image.set_url:
+                        #id: fallback_playing_image
+                        #url: https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/JPEG_example_flower.jpg/330px-JPEG_example_flower.jpg
+                    - lvgl.widget.hide: album_art_widget
+                    - lvgl.widget.show: album_art_widget2
+          else:
+                    - lvgl.widget.show: album_art_widget
+                    - lvgl.widget.hide: album_art_widget2
+                    - online_image.set_url:
+                        id: fallback_playing_image
+                        url: !lambda return x ;
+              
+  - platform: homeassistant
+    id: rasp_title
+    name: "hifi Media title"
+    entity_id: ${hifi_salon}
+    attribute: media_title
+    on_value:
+      - if:
+            condition:
+              lambda: !lambda 'return id(rasp_media).state == "playing";'
+            then:
+              - lvgl.label.update:
+                  id: title_label
+                  text: !lambda return x ;
+  - platform: homeassistant
+    id: tv_title
+    name: "tv Media title"
+    entity_id: ${tv_salon}
+    attribute: media_title
+    on_value:
+      - if:
+            condition:
+              lambda: !lambda 'return id(tv_media).state == "playing" && id(rasp_media).state == "idle";'
+            then:
+              - lvgl.widget.hide: artist_label
+              - lvgl.widget.hide: album_label
+              - lvgl.label.update:
+                  id: title_label
+                  text: !lambda return x ;
+  - platform: homeassistant
+    id: rasp_artist
+    name: "hifi Media artist"
+    entity_id: ${hifi_salon}
+    attribute: media_artist
+    on_value:
+      - if:
+            condition:
+              lambda: !lambda 'return id(rasp_media).state == "playing";'
+            then:
+              - lvgl.widget.show: artist_label
+              - lvgl.label.update:
+                  id: artist_label
+                  text: !lambda return x ;         
+  - platform: homeassistant
+    id: rasp_album
+    name: "hifi Media album"
+    entity_id: ${hifi_salon}
+    attribute: media_album_name
+    on_value:
+      - if:
+            condition:
+              lambda: !lambda 'return id(rasp_media).state == "playing";'
+            then:
+              - lvgl.widget.show: album_label
+              - lvgl.label.update:
+                  id: album_label
+                  text: !lambda return x ;
+switch:
+  - platform: lvgl
+    widget: wake_label2
+    name: wake_switch
+    on_turn_on:
+      - globals.set:
+          id: audio_mode
+          value: '1'
+      - switch.turn_on: use_wake_word     
+    on_turn_off:
+      - globals.set:
+          id: audio_mode
+          value: '0' 
+      - switch.turn_off: use_wake_word 
+  - platform: template
+    id: tv_switch0
+    name: tv switch0
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_state:
+      - lvgl.widget.update:
+          id: tv_switch
+          state:
+            checked: !lambda return x;
+  - platform: template
+    id: alarm_switch
+    name: alarm switch
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      - key_collector.enable: lvgl_keypad_collector
+      - lvgl.widget.hide: top_layer
+      - lvgl.page.show: keypad_page
+    on_turn_off:
+      - key_collector.disable: lvgl_keypad_collector
+      - lvgl.widget.show: top_layer
+      - lvgl.page.show: main_page
+      - lvgl.led.update:
+          id: lvgl_led
+          color: 0xFF0000
+    
+  - platform: template
+    id: group_switch
+    name: group switch
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      - lvgl.checkbox.update:
+          id: checkbox_group
+          state:
+            checked: true
+      - homeassistant.action:
+          action: media_player.volume_set
+          data:
+              entity_id: ${hifi2_salon}
+              volume_level: !lambda return (id(media_player_volume).state );
+      
+
+    on_turn_off:
+      - lvgl.checkbox.update:
+          id: checkbox_group
+          state:
+            checked: false
+  
+  - platform: template
+    id: party_switch
+    name: party switch
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      - lvgl.widget.update:
+          id: party_but
+          state:
+            checked: true
+      - switch.turn_on: group_switch
+      - homeassistant.action:
+            action: media_player.media_play
+            data:
+              entity_id: ${hifi_salon}
+    on_turn_off:
+      - lvgl.widget.update:
+          id: party_but
+          state:
+            checked: false
+      - switch.turn_off: group_switch
+      - homeassistant.action:
+            action: media_player.media_pause
+            data:
+              entity_id: ${hifi_salon}
+binary_sensor:
+  - platform: homeassistant
+    id: tv_muted
+    entity_id: ${tv_salon2}
+    attribute: is_volume_muted
+    trigger_on_initial_state: true
+    on_state:
+      - if:
+            condition:
+              lambda: !lambda 'return id(tv_media).state == "playing";'
+            then:
+              - lvgl.label.update:
+                  id: play_label
+                  text: "\U000F03E4"
+            else:
+              - lvgl.label.update:
+                  id: play_label
+                  text: "\U000F040A"
+sensor:
+
+  - platform: homeassistant
+    id: media_player_volume
+    entity_id: ${hifi_salon}
+    attribute: volume_level
+    on_value:
+      - if:
+            condition:
+              lambda: !lambda 'return id(rasp_media).state == "playing";'
+            then:
+
+              - lvgl.slider.update:
+                  id: slider_vol
+                  value: !lambda return (x * 100);
+  
+  - platform: homeassistant
+    id: tv_player_volume
+    entity_id: ${tv_salon2}
+    attribute: volume_level
+    on_value:
+      - if:
+            condition:
+              lambda: !lambda 'return id(tv_media).state == "playing" && id(rasp_media).state == "idle" ;'
+            then:
+
+              - lvgl.slider.update:
+                  id: slider_vol
+                  value: !lambda return (x * 100);
+  
+  - platform: homeassistant
+    id: media_player_dur
+    entity_id: ${hifi_salon}
+    attribute: media_duration
+
+  - platform: homeassistant
+    id: media_player_pos
+    entity_id: ${hifi_sensor}   
+    on_value:
+      - if:
+            condition:
+              lambda: !lambda 'return id(rasp_media).state == "playing";'
+            then:
+
+              - lvgl.bar.update:
+                  id: slider_dur
+                  value: !lambda return (( id(media_player_dur).state - x)*100)/id(media_player_dur).state;
+  - platform: homeassistant
+    id: tv_player_dur
+    entity_id: ${tv_salon2}
+    attribute: media_position
+    on_value:
+      - if:
+            condition:
+              lambda: !lambda 'return id(tv_media).state == "playing" && id(rasp_media).state == "idle";'
+            then:
+
+              - lvgl.bar.update:
+                  id: slider_dur
+                  value: !lambda return (x * 100);
+globals:
+  - id: backlight_brightness_level
+    type: float
+    restore_value: yes
+    initial_value: '0.5'  # 50% default brightness
+
+
+
+
+
+
+key_collector:
+  
+   
+  - source_id: lvgl_keypad
+    id: lvgl_keypad_collector
+    min_length: 4
+    max_length: 4
+    end_keys: "#"
+    end_key_required: true
+    back_keys: "*"
+    allowed_keys: "0123456789*#"
+    timeout: 5s
+    on_progress:
+      - if:
+          condition:
+            lambda: return (0 != x.compare(std::string{""}));
+          then:
+            - lvgl.label.update:
+                id: lvgl_label
+                text: !lambda 'return x.c_str();'
+          else:
+            - lvgl.label.update:
+                id: lvgl_label
+                text: "Enter code and \U000F0E1E"
+    on_result:
+      - if:
+          condition:
+            lambda: return (0 == x.compare(std::string{"${pass}"}));
+          then:
+            - lvgl.led.update:
+                id: lvgl_led
+                color: 0x00FF00
+            - delay: 3s
+            - switch.turn_off: alarm_switch
+          else:
+            - lvgl.led.update:
+                id: lvgl_led
+                color: 0xFF0000
+number:
+  - platform: template
+    name: LVGL Screen timeout
+    optimistic: true
+    id: display_timeout
+    unit_of_measurement: "s"
+    initial_value: 60 
+    restore_value: true
+    min_value: 20 
+    max_value: 180
+    step: 10
+    mode: box
+
+lvgl:
+  rotation: 0
+  buffer_size: 100%
+  byte_order: little_endian
+  displays: main_display
+  touchscreens: device_touchscreen
+  on_idle:
+    timeout: !lambda "return (id(display_timeout).state * 1000);"
+    then:
+      #- logger.log: "LVGL is idle"
+      - light.turn_off: display_backlight
+      - lvgl.pause:
+  
+  
+  theme:
+    
+    label:
+      text_font: font1 # set all your labels to use your custom defined font
+    button:
+      bg_color: 0x2F8CD8
+      bg_grad_color: 0x005782
+      bg_grad_dir: VER
+      bg_opa: COVER
+      border_color: 0x0077b3
+      border_width: 1
+      text_color: 0xFFFFFF
+      pressed: # set some button colors to be different in pressed state
+        bg_color: 0x006699
+        bg_grad_color: 0x00334d
+      checked: # set some button colors to be different in checked state
+        bg_color: 0x1d5f96
+        bg_grad_color: 0x03324A
+        text_color: 0xfff300
+    buttonmatrix:
+      bg_opa: TRANSP
+      border_color: 0xFFFFFF
+      border_width: 0
+      text_color: 0xFFFFFF
+      pad_all: 0
+      items: # set all your buttonmatrix buttons to use your custom defined styles and font
+        bg_color: 0x2F8CD8
+        bg_grad_color: 0x005782
+        bg_grad_dir: VER
+        bg_opa: COVER
+        border_color: 0x0077b3
+        border_width: 0
+        text_color: 0xFFFFFF
+        text_font: font2
+        pressed:
+          bg_color: 0x006699
+          bg_grad_color: 0x00334d
+        checked:
+          bg_color: 0x1d5f96
+          bg_grad_color: 0x03324A
+          text_color: 0xffff00
+    switch:
+      bg_color: 0xC0C0C0
+      bg_grad_color: 0xb0b0b0
+      bg_grad_dir: VER
+      bg_opa: COVER
+      checked:
+        bg_color: 0x1d5f96
+        bg_grad_color: 0x03324A
+        bg_grad_dir: VER
+        bg_opa: COVER
+      knob:
+        bg_color: 0xFFFFFF
+        bg_grad_color: 0xC0C0C0
+        bg_grad_dir: VER
+        bg_opa: COVER
+    slider:
+      border_width: 1
+      border_opa: 15%
+      bg_color: 0xcccaca
+      bg_opa: 15%
+      indicator:
+        bg_color: 0x1d5f96
+        bg_grad_color: 0x03324A
+        bg_grad_dir: VER
+        bg_opa: COVER
+      knob:
+        bg_color: 0x2F8CD8
+        bg_grad_color: 0x005782
+        bg_grad_dir: VER
+        bg_opa: COVER
+        border_color: 0x0077b3
+        border_width: 1
+        text_color: 0xFFFFFF
+  style_definitions:
+    - id: header_footer
+      
+      bg_color: 0x2F8CD8
+      bg_grad_color: 0x005782
+      bg_grad_dir: VER
+      bg_opa: COVER
+      border_opa: TRANSP
+      radius: 0
+      pad_all: 0
+      pad_row: 0
+      pad_column: 0
+      border_color: 0x0077b3
+      text_color: 0xFFFFFF
+      width: 100%
+      height: 50
+    - id: but_style
+      bg_color: 0x2F8CD8
+      bg_grad_color: 0x005782
+      bg_grad_dir: VER
+      bg_opa: COVER
+      border_color: 0x0077b3
+      border_width: 1
+      text_color: 0xFFFFFF
+      text_font: font2
+    - id: date_style
+      text_font: unscii_8
+      align: center
+      text_color: 0x000000
+      bg_opa: 60%
+      radius: 4
+      pad_all: 2
+    - id: glob_style
+      bg_color: 0xFFFFFF
+      text_color: 0x005782
+      
+      
+  
+  top_layer:     
+    widgets:
+      - label:
+          text: "\U000F05A9"
+          id: lbl_hastatus
+          hidden: true
+          align: top_right
+          x: -2
+          y: 7
+          text_align: right
+          text_color: 0xFFFFFF
+      - obj:
+            align: CENTER
+            id: assist_obj
+            hidden: true
+            height: 200
+            width: 200
+            bg_opa: 0.5
+            #styles: header_footer
+            widgets:
+              - label:
+                  id: assist_label
+                  text: "\U000F171A"
+                  text_font: font3
+                  text_align: CENTER
+                  align: CENTER
+                  text_color: 0x3827F5
+                  bg_color: 0x808080
+      - buttonmatrix:
+          align: bottom_mid
+          hidden: false
+          styles: header_footer
+          pad_all: 0
+          outline_width: 0
+          id: top_layer
+          text_font: font1
+          items:
+            styles: header_footer
+          rows:
+            - buttons:
+              - id: page_remote
+                text: "\U000F0454"
+                
+                on_click:
+                  then:
+                    lvgl.page.show: main_page
+              - id: page_assist
+                text: "\U000F171A"
+                on_pressing:
+                  - if:
+                      condition:
+                        lambda: 'return id(audio_mode) == 1;'
+                      then:
+                        - switch.turn_off: use_wake_word
+                  - delay: 0.5s
+                  - voice_assistant.start:
+                      silence_detection: false
+              
+                on_release:
+                  - voice_assistant.stop:
+                  - delay: 0.5s
+                  - if:
+                      condition:
+                        lambda: 'return id(audio_mode) == 1;'
+                      then:
+
+                        - switch.turn_on: use_wake_word
+              - id: page_home
+                text: "\U000F07D1"
+                on_click:
+                  then:
+                    lvgl.page.show: home_page
+      - keyboard:
+          id: keyboard_id
+          hidden: true
+          textarea: textarea_search_music
+          mode: TEXT_LOWER
+          height: 270
+      
+      - obj:
+            hidden: true
+            id: search_window
+            y: 30
+            x: 10
+            #align: CENTER
+            height: 300
+            width: 460
+            bg_opa: 0.7
+            pad_all: 0
+            border_width: 2
+            border_color: black
+            bg_color: 0x4055B3
+            widgets:
+              - label:
+                  text: "search:"
+                  align: TOP_MID
+                  text_align: CENTER
+                  text_color: 0xFFFFFF
+              - button:
+                  id: search_close
+                  align: TOP_RIGHT
+                  radius: 50
+                  width: 50
+                  height: 50
+                  bg_color: 0xE60505
+                  on_click:
+                    then:
+                      
+                      - lvgl.textarea.update:
+                              id: textarea_search_music
+                              text: ""
+                      - lvgl.widget.hide: keyboard_id
+                      - lvgl.widget.hide: search_window
+                      - if:
+                          condition:
+                            lvgl.page.is_showing: player_page
+                          then:
+                            - lvgl.widget.hide: music_option
+
+                      
+                  widgets:
+                    - label:
+                        text: "\U000F015A"
+                        text_font: font2
+                        align: CENTER
+                        text_align: CENTER
+                        text_color: 0xFFFFFF
+              - textarea:
+                  id: textarea_search_music
+                  #align: CENTER
+                  y: 70
+                  x: 30
+                  width: 400
+                  height: 70
+                  one_line: true
+                  bg_opa: 1
+                  text_font: font2
+                  text_align: CENTER
+                  text_color: 0x000000
+                  bg_color: 0xFFFFFF
+                  placeholder_text: "Enter text here"
+                  on_focus:
+                    - lvgl.widget.show: keyboard_id
+                   
+                  on_ready:
+                    - if:
+                        condition:
+                          lvgl.page.is_showing: player_page
+                        then:
+                          - if:
+                              condition:
+                                lambda: !lambda 'return id(switch_artist).state == true;'
+                              then:
+                                - mqtt.publish:
+                                    topic: search/artist
+                                    payload: !lambda 'return text;'
+                          - if:
+                              condition:
+                                lambda: !lambda 'return id(switch_album).state == true;'
+                              then:
+                                - mqtt.publish:
+                                    topic: search/album
+                                    payload: !lambda 'return text;'
+                          - if:
+                              condition:
+                                lambda: !lambda 'return id(switch_track).state == true;'
+                              then:
+                                - mqtt.publish:
+                                    topic: search/track
+                                    payload: !lambda 'return text;'
+
+                          
+                          #- mqtt.publish:
+                              #topic: search/artist
+                              #payload: !lambda 'return text;'
+                          - delay: 0.5s
+                          - lvgl.textarea.update:
+                              id: textarea_search_music
+                              text: ""
+              - obj:
+                  hidden: true
+                  id: music_option
+                  y: 160
+                  x: 20
+                  #align: CENTER
+                  height: 100
+                  width: 420
+                  bg_opa: 0
+                  pad_all: 0
+                  border_width: 2
+                  border_color: red
+                  bg_color: 0x4055B3
+                  widgets:
+                    - label:
+                        text: "artist"
+                        align: TOP_LEFT
+                        text_align: CENTER
+                        text_color: 0xFFFFFF
+                    - checkbox:
+                        align: BOTTOM_LEFT
+                        id: checkbox_artist
+                        text_font: montserrat_32
+                    - label:
+                        text: "album"
+                        align: TOP_MID
+                        text_align: CENTER
+                        text_color: 0xFFFFFF
+                    - checkbox:
+                        align: BOTTOM_MID
+                        id: checkbox_album
+                        text_font: montserrat_32
+                    - label:
+                        text: "track"
+                        align: TOP_RIGHT
+                        text_align: CENTER
+                        text_color: 0xFFFFFF
+                    - checkbox:
+                        align: BOTTOM_RIGHT
+                        id: checkbox_track
+                        text_font: montserrat_32
+
+      - image:
+            id: qr_wifi_widget
+            hidden: true
+            align: CENTER
+            src: wifi_qr
+            width: 400
+            height: 400
+            antialias: false
+            clickable: true
+            on_click:
+              - lvgl.widget.hide: qr_wifi_widget
+      
+  pages:
+    - id: main_page
+      on_swipe_left:
+        then:
+          - lvgl.page.show: player_page
+      widgets:
+        - obj:
+            align: TOP_MID
+            styles: header_footer
+            widgets:
+              - label:
+                  text: ";polm remote"
+                  align: CENTER
+                  text_align: CENTER
+                  text_color: 0xFFFFFF
+        - button:
+            id: pow_but
+            x: 1
+            y: 50
+            radius: 100
+            width: 100
+            height: 100
+            bg_color: 0xE60505
+            widgets:
+              - label:
+                  text: "\U000F0425"
+                  text_font: font2
+                  text_align: CENTER
+                  align: CENTER
+                  text_color: 0xFFFFFF
+            on_click:
+              then:
+                - button.press: box_power
+          
+        - label:
+              id: rm_label
+              x: 200
+              y: 50
+              #align: CENTER
+              width: 100
+              height: 50
+              text: "box"
+              #text_align: CENTER
+              text_font: font2
+              text_color: 0x000000
+        - switch:
+            id: tv_switch
+            x: 370
+            y: 50
+            width: 100
+            height: 50
+            
+            state:
+              checked: false
+            #bg_color: 0x4B5563
+            on_change:
+              then:
+                #- logger.log:
+                    #format: "Switch state: %d"
+                    #args: [ x ]
+                - if:
+                    condition:
+                      - lambda: !lambda 'return x == 1;'
+                    then:
+                      - lvgl.label.update:
+                          id: rm_label
+                          text: "tv"
+                      - switch.turn_on: tv_switch0
+
+                - if:
+                    condition:
+                      - lambda: !lambda 'return x == 0;'
+                    then:
+                      - switch.turn_off: tv_switch0
+                      - lvgl.label.update:
+                          id: rm_label
+                          text: "box"
+        - buttonmatrix:
+            id: rm_keypad
+            x: 25
+            y: 160
+            width: 420
+            height: 420
+            text_font: font2
+            items:
+              pressed:
+                bg_color: 0xFFFF00
+            rows:
+              - buttons:
+                #text_font: font2
+                  - text: "av"
+                    control:
+                      no_repeat: true
+                    on_press:
+                      then:
+                        - button.press: tv_av
+                        - switch.turn_on: tv_switch0
+
+                  - text: "\U000F0737"
+                    
+                    control:
+                      no_repeat: true
+                    on_press:
+                      then:
+                        - if:
+                            condition:
+                              - switch.is_on: tv_switch0
+                            then:
+                              - button.press: tv_haut
+                        - if:
+                            condition:
+                              - switch.is_off: tv_switch0
+                            then:
+                              - button.press: box_haut
+                  - text: "\U000F1B97"
+                   
+                    control:
+                      no_repeat: true
+                    on_press:
+                      then:
+                        - lvgl.page.show: player_page
+              - buttons:
+                #text_font: font2
+                  - text: "\U000F0731"
+                    control:
+                      no_repeat: true
+                    on_press:
+                      then:
+                        - button.press: box_gauche
+                  - text: "ok"
+                    
+                    control:
+                      no_repeat: true
+                    on_press:
+                      then:
+                        - if:
+                            condition:
+                              - switch.is_on: tv_switch0
+                            then:
+                              - button.press: tv_ok
+                        - if:
+                            condition:
+                              - switch.is_off: tv_switch0
+                            then:
+                              - button.press: box_ok
+                  - text: "\U000F0734"
+                    on_press:
+                      then:
+                        - button.press: box_droite
+                    control:
+                      no_repeat: true
+              - buttons:
+                #text_font: font2
+                  - text: "\U000F0335"
+                    id: light_btn
+                    control:
+                      no_repeat: true
+                    on_press:
+                      - homeassistant.service:
+                          service: light.toggle
+                          data:
+                            entity_id: ${light_salon}
+                  - text: "\U000F072E"
+                    
+                    control:
+                      no_repeat: true
+                    on_press:
+                      then:
+                        - if:
+                            condition:
+                              - switch.is_on: tv_switch0
+                            then:
+                              - button.press: tv_bas
+                        - if:
+                            condition:
+                              - switch.is_off: tv_switch0
+                            then:
+                              - button.press: box_bas
+                  - text: "back"
+                   
+                    control:
+                      no_repeat: true
+                    on_press:
+                      then:
+                        - button.press: box_back
+        - button:
+            id: vup_but
+            
+            x: 320
+            y: 600
+            width: 150
+            height: 150
+            radius: 100
+            bg_color: 0xA6610C
+            widgets:
+              - label:
+                  text: "\U000F075D"
+                  text_font: font3
+                  text_align: CENTER
+                  align: CENTER
+                  text_color: 0xFFFFFF
+            on_click:
+              then:
+                - if:
+                    condition:
+                      - switch.is_on: tv_switch0
+                    then:
+                      - button.press: tv_vp
+                - if:
+                    condition:
+                      - switch.is_off: tv_switch0
+                    then:
+                      - button.press: box_vp
+        - button:
+            id: vdown_but
+            x: 10
+            y: 600
+            radius: 100
+            width: 150
+            height: 150
+            bg_color: 0xA6610C
+            widgets:
+              - label:
+                  text: "\U000F075E"
+                  text_font: font3
+                  text_align: CENTER
+                  align: CENTER
+                  text_color: 0xFFFFFF
+            on_click:
+              then:
+                - if:
+                    condition:
+                      - switch.is_on: tv_switch0
+                    then:
+                      - button.press: tv_vm
+                - if:
+                    condition:
+                      - switch.is_off: tv_switch0
+                    then:
+                      - button.press: box_vm
+    
+
+    
+    - id: player_page
+      on_swipe_right:
+        then:
+          - lvgl.page.show: main_page
+      widgets:
+        - obj:
+            align: TOP_MID
+            styles: header_footer
+            widgets:
+              - label:
+                  text: ";polmos player"
+                  align: CENTER
+                  text_align: CENTER
+                  text_color: 0xFFFFFF
+        
+            
+        - image:
+            id: album_art_widget
+            hidden: false
+            x: 60
+            y: 130
+            src: fallback_playing_image
+            width: 300
+            height: 300
+            antialias: false
+            clickable: false
+        - image:
+            id: album_art_widget2
+            hidden: true
+            x: 60
+            y: 130
+            src: flower_image
+            width: 300
+            height: 300
+            antialias: false
+            clickable: false
+        - label:
+            id: group_label
+            x: 330
+            y: 60
+            
+            text: "group"
+            text_align: CENTER
+        - checkbox:
+            text_font: montserrat_32
+            id: checkbox_group
+            #text: Group
+            align_to:
+              id: group_label
+              align: OUT_RIGHT_MID
+              x: 10
+            
+            
+            on_change:
+              - switch.toggle: group_switch
+        - button:
+              id: party_but
+              #styles: but_style
+              x: 5
+              y: 50
+              width: 50
+              height: 50
+              radius: 50
+              bg_color: 0xE60505
+              pressed: # set some button colors to be different in pressed state
+                bg_color: 0xEA9999
+                bg_grad_color: 0x00334d
+              on_click:
+                then:
+                  - switch.toggle: party_switch
+              widgets:
+                - label:
+                    text: "\U000F1056"
+                    text_font: font2
+                    align: CENTER
+                    text_align: CENTER
+                    text_color: 0xFFFFFF
+        - button:
+              id: search_music_but
+              #styles: but_style
+              x: 190
+              y: 50
+              width: 50
+              height: 50
+              radius: 50
+              bg_color: 0xE60505
+              pressed: # set some button colors to be different in pressed state
+                bg_color: 0xEA9999
+                bg_grad_color: 0x00334d
+              on_click:
+                    then:
+                      - lvgl.widget.show: search_window
+                      - lvgl.widget.show: music_option
+                      #- key_collector.enable: keyboard_id_collector
+              widgets:
+                - label:
+                    text: "\U000F1C8D"
+                    text_font: font2
+                    align: CENTER
+                    text_align: CENTER
+                    text_color: 0xFFFFFF
+        - button:
+              id: next_but
+              #styles: but_style
+              x: 320
+              y: 600
+              width: 100
+              height: 100
+              radius: 50
+              bg_color: 0xE60505
+              pressed: # set some button colors to be different in pressed state
+                bg_color: 0xEA9999
+                bg_grad_color: 0x00334d
+              on_click:
+                then:
+                  - if:
+                      condition:
+                        lambda: !lambda 'return id(rasp_media).state == "playing";'
+                      then:
+                        - homeassistant.action:
+                            action: media_player.media_next_track
+                            data:
+                              entity_id: ${hifi_salon}
+                      else:
+                        - homeassistant.action:
+                            action: media_player.media_next_track
+                            data:
+                              entity_id: ${tv_salon}
+              widgets:
+                - label:
+                    text: "\U000F04AD"
+                    text_font: font2
+                    align: CENTER
+                    text_align: CENTER
+                    text_color: 0xFFFFFF
+                    
+        - button:
+              id: play_but
+              #styles: but_style
+              x: 190
+              y: 600
+              width: 100
+              height: 100
+              radius: 50
+              bg_color: 0xE60505
+              pressed: # set some button colors to be different in pressed state
+                bg_color: 0xEA9999
+                bg_grad_color: 0x00334d
+              on_click:
+                then:
+                  - if:
+                      condition:
+                        #lambda: !lambda 'return id(rasp_media).state == "playing" && id(tv_muted).state == true ;'
+                        lambda: !lambda 'return id(rasp_media).state == "playing" || id(tv_media).state == "playing" ;'
+                      then:
+                        - if:
+                            condition:
+                              lambda: !lambda 'return id(rasp_media).state == "playing" && id(tv_muted).state == true ;'
+                            then:
+                              - homeassistant.action:
+                                  action: media_player.media_pause
+                                  data:
+                                    entity_id: ${hifi_salon}
+                        - if:
+                            condition:
+                              lambda: !lambda 'return id(tv_media).state == "playing" && id(tv_muted).state == false;'
+                            then:
+                              
+                              - homeassistant.action:
+                                  action: media_player.media_pause
+                                  data:
+                                    entity_id: ${tv_salon}
+                        - if:
+                            condition:
+                              lambda: !lambda 'return id(rasp_media).state == "playing" && id(tv_media).state == "off" ;'
+                            then:
+                              - homeassistant.action:
+                                  action: media_player.media_pause
+                                  data:
+                                    entity_id: ${hifi_salon}
+                  - if:
+                      condition:
+                        #lambda: !lambda 'return id(rasp_media).state == "playing" && id(tv_muted).state == true ;'
+                        lambda: !lambda 'return id(tv_media).state == "paused" || id(rasp_media).state == "idle";'
+                      then:  
+                      #else:
+                        - if:
+                            condition:
+                              lambda: !lambda 'return id(tv_media).state == "paused";'
+                            then:
+                              - homeassistant.action:
+                                  action: media_player.media_play
+                                  data:
+                                    entity_id: ${tv_salon}
+                        - if:
+                            condition:
+                              lambda: !lambda 'return id(tv_muted).state == true || id(tv_media).state == "off";'   
+                            #else:
+                            then:
+                              - homeassistant.action:
+                                  action: media_player.media_play
+                                  data:
+                                    entity_id: ${hifi_salon}
+              widgets:
+              - label:
+                  id: play_label
+                  text: "\U000F040A"
+                  text_font: font2
+                  align: CENTER
+                  text_align: CENTER
+                  text_color: 0xFFFFFF
+                  selected:
+                    text_color: 0xEA9999
+                  #on_click:
+                    #then:
+                      #- button.press: box_power
+
+        - button:
+              id: prev_but
+              #styles: but_style
+              x: 60
+              y: 600
+              width: 100
+              height: 100
+              radius: 50
+              bg_color: 0xE60505
+              pressed: # set some button colors to be different in pressed state
+                bg_color: 0xEA9999
+                bg_grad_color: 0x00334d
+              on_click:
+                then:
+                  - if:
+                      condition:
+                        lambda: !lambda 'return id(rasp_media).state == "playing";'
+                      then:
+                        - homeassistant.action:
+                            action: media_player.media_previous_track
+                            data:
+                              entity_id: ${hifi_salon}
+                      else:
+                        - homeassistant.action:
+                            action: media_player.media_next_track
+                            data:
+                              entity_id: ${tv_salon}
+              widgets:
+                - label:
+                    text: "\U000F04AE"
+                    text_font: font2
+                    align: CENTER
+                    text_align: CENTER
+                    text_color: 0xFFFFFF
+        - slider:
+              #align: CENTER
+              id: slider_vol
+              #value: 75
+              x: 420
+              y: 160
+              width: 30
+              height: 400
+              min_value: 0
+              max_value: 100
+              adv_hittest: true  
+              pad_all: 8 
+              on_release:
+                then:
+                  - if:
+                      condition:
+                        lambda: !lambda 'return id(rasp_media).state == "playing";'
+                      then:
+                        - homeassistant.action:
+                            action: media_player.volume_set
+                            data:
+                              entity_id: ${hifi_salon}
+                              volume_level: !lambda return (x / 100);
+                        - if:
+                            condition:
+                              - switch.is_on: group_switch
+                            then:
+                              - homeassistant.action:
+                                  action: media_player.volume_set
+                                  data:
+                                    entity_id: ${hifi2_salon}
+                                    volume_level: !lambda return (x / 100);    
+                      else:
+                        - if:
+                            condition:
+                              lambda: !lambda 'return id(tv_media).state == "playing";'
+                            then:
+
+                                - homeassistant.action:
+                                    action: media_player.volume_set
+                                    data:
+                                      entity_id: ${tv_salon}
+                                      volume_level: !lambda return (x / 100);
+        - bar:
+              #align: CENTER
+              id: slider_dur
+              #value: 75
+              x: 60
+              y: 540
+              width: 350
+              height: 30
+              min_value: 0
+              max_value: 100
+              adv_hittest: true  
+              pad_all: 8 
+        - label:
+              id: title_label
+              x: 60
+              y: 436
+              width: 350
+              long_mode: SCROLL_CIRCULAR 
+              #align: CENTER
+              #width: 100
+              height: 50
+              text: "title"
+              #text_align: CENTER
+              #text_font: font2
+              text_color: 0xA62626
+        - label:
+              id: artist_label
+              x: 60
+              y: 469
+              width: 350
+              long_mode: SCROLL_CIRCULAR
+              #align: CENTER
+              #width: 100
+              height: 50
+              text: "artist"
+              #text_align: CENTER
+              #text_font: font2
+              text_color: 0xA62626
+        - label:
+              id: album_label
+              x: 60
+              y: 502
+              width: 350
+              long_mode: SCROLL_CIRCULAR
+              #align: CENTER
+              #width: 100
+              height: 50
+              text: "album"
+              #text_align: CENTER
+              #text_font: font2
+              text_color: 0xA62626
+        
+    - id: keypad_page
+      widgets:
+        - obj:
+            align: TOP_MID
+            styles: header_footer
+            widgets:
+              - label:
+                  text: ";polm alarme"
+                  align: CENTER
+                  text_align: CENTER
+                  text_color: 0xFFFFFF
+        - led:
+            id: lvgl_led
+            x: 30
+            y: 70
+            color: 0xFF0000
+            brightness: 70%
+        - obj:
+            width: 280
+            height: 50
+            align_to:
+              id: lvgl_led
+              align: OUT_RIGHT_MID
+              x: 57
+            border_width: 1
+            border_color: 0
+            border_opa: 50%
+            pad_all: 0
+            bg_opa: 80%
+            bg_color: 0xFFFFFF
+            shadow_color: 0
+            shadow_opa: 50%
+            shadow_width: 10
+            shadow_spread: 3
+            radius: 5
+            widgets:
+              - label:
+                  id: lvgl_label
+                  align: CENTER
+                  text: "Enter code and \U000F0E1E"
+                  text_align: CENTER
+        - buttonmatrix:
+            id: lvgl_keypad
+            x: 20
+            y: 195
+            width: 450
+            height: 400
+            items:
+              pressed:
+                bg_color: 0xFFFF00
+            rows:
+              - buttons:
+                  - text: 1
+                    control:
+                      no_repeat: true
+                  - text: 2
+                    control:
+                      no_repeat: true
+                  - text: 3
+                    control:
+                      no_repeat: true
+              - buttons:
+                  - text: 4
+                    control:
+                      no_repeat: true
+                  - text: 5
+                    control:
+                      no_repeat: true
+                  - text: 6
+                    control:
+                      no_repeat: true
+              - buttons:
+                  - text: 7
+                    control:
+                      no_repeat: true
+                  - text: 8
+                    control:
+                      no_repeat: true
+                  - text: 9
+                    control:
+                      no_repeat: true
+              - buttons:
+                  - text: "\U000F006E"
+                    key_code: "*"
+                    control:
+                      no_repeat: true
+                  - text: 0
+                    control:
+                      no_repeat: true
+                  - text: "\U000F0E1E"
+                    key_code: "#"
+                    control:
+                      no_repeat: true
+    - id: home_page
+      
+      widgets:
+        - obj:
+            align: TOP_MID
+            styles: header_footer
+            widgets:
+              - label:
+                  text: ";polmos home"
+                  align: CENTER
+                  text_align: CENTER
+                  text_color: 0xFFFFFF
+        - buttonmatrix:
+            id: menu_keypad
+            x: 40
+            y: 295
+            pad_all: 0
+            outline_width: 0
+            width: 400
+            height: 400
+            text_font: font2
+            items:
+              pressed:
+                bg_color: 0xFFFF00
+            rows:
+              - buttons:
+                #text_font: font2
+                  - text: "\U000F0951"
+                    control:
+                      no_repeat: true
+                    on_press:
+                      then:
+                        - lvgl.page.show: config_page
+                  - text: "\U000F0432"                  
+                    control:
+                      no_repeat: true
+                    on_press:
+                      then:
+                        - lvgl.widget.show: qr_wifi_widget
+                  - text: "\U000F011B"                   
+                    control:
+                      no_repeat: true
+                    on_press:
+                      then:
+                        - lvgl.page.show: player_page
+        - obj: # clock container
+            height: SIZE_CONTENT
+            width: 240
+            x: 240
+            y: 50
+            bg_opa: TRANSP
+            pad_all: 0
+            border_width: 0
+            bg_color: 0xFFFFFF
+            widgets:
+              - meter: # clock face
+                  height: 220
+                  width: 220
+                  align: CENTER
+                  bg_opa: TRANSP
+                  border_width: 0
+                  text_color: 0xA80AF0
+                  scales:
+                    - range_from: 0 # minutes scale
+                      range_to: 60
+                      angle_range: 360
+                      rotation: 270
+                      ticks:
+                        width: 1
+                        count: 61
+                        length: 10
+                        color: 0x88579E
+                      indicators:
+                        - line:
+                            id: minute_hand
+                            width: 3
+                            color: 0x1D298C
+                            length: 96%
+                            value: 0
+                    - range_from: 1 # hours scale for labels
+                      range_to: 12
+                      angle_range: 330
+                      rotation: 300
+                      ticks:
+                        width: 1
+                        count: 12
+                        length: 1
+                        major:
+                          stride: 1
+                          width: 4
+                          length: 10
+                          color: 0x8E289E
+                          label_gap: 12
+                    - range_from: 0 # hi-res hours scale for hand
+                      range_to: 720
+                      angle_range: 360
+                      rotation: 270
+                      indicators:
+                        - line:
+                            id: hour_hand
+                            width: 5
+                            color: 0x0721F2
+                            length: 70%
+                            value: 0
+              - label:
+                  styles: date_style
+                  id: day_label
+                  y: -30
+              - label:
+                  id: date_label
+                  styles: date_style
+                  y: 30
+        - obj: # weather container
+            id: weather_container
+            height: 240
+            width: 240
+            x: 0
+            y: 50
+            bg_opa: 0.6
+            pad_all: 0
+            border_width: 0
+            bg_color: 0xFFFFFF
+            clickable: true
+            on_press:          
+                then:
+                  - lvgl.page.show: meteo_page
+            widgets:
+              - label:
+                  id: weather_label
+                  x: 70
+                  text: "\U000F0F2F"
+                  text_font: font3
+                  text_align: CENTER
+                  text_color: 0xFFFFFF
+              - obj:
+                  #id: temp_label
+                  y: 100
+                  height: 140
+                  width: 240
+                  bg_opa: TRANSP
+                  pad_all: 0
+                  border_width: 0
+                  bg_color: 0xFFFFFF
+                  clickable: true
+                  on_press:          
+                    then:
+                      - lvgl.page.show: meteo_page
+                  widgets:
+                    - label:
+                        id: temp_label1
+                        text: "temp"                     
+                        #text_align: CENTER
+                        text_color: 0x000000                       
+                    - label:
+                        id: temp_label2
+                        text: "--.-"   
+                        align_to:
+                          id: temp_label1
+                          align: OUT_RIGHT_MID
+                          x: 10                  
+                        text_align: CENTER
+                        text_color: 0x000000
+                        text_font: font4
+                    - label:
+                        id: temp_label3
+                        text: "°C"   
+                        align_to:
+                          id: temp_label2
+                          align: OUT_RIGHT_MID
+                          x: 5                 
+                        text_align: CENTER
+                        text_color: 0x000000
+                    - label:
+                        id: hum_label1
+                        align_to:
+                          id: temp_label1
+                          align: OUT_BOTTOM_LEFT                                         
+                        text: "hum"                     
+                        text_align: CENTER
+                        text_color: 0x000000                        
+                    - label:
+                        id: hum_label2
+                        text: "--.-"   
+                        align_to:
+                          id: hum_label1
+                          align: OUT_RIGHT_MID
+                          x: 10                                          
+                        text_color: 0x000000
+                        text_font: font4
+                    - label:
+                        id: hum_label3
+                        text: "%"   
+                        align_to:
+                          id: hum_label2
+                          align: OUT_RIGHT_MID
+                          x: 10                
+                        text_align: CENTER
+                        text_color: 0x000000
+                    - label:
+                        id: pres_label1
+                        align_to:
+                          id: hum_label1
+                          align: OUT_BOTTOM_LEFT                          
+                        text: "pres"                                            
+                        text_color: 0x000000                       
+                    - label:
+                        id: pres_label2
+                        text: "----.-"   
+                        align_to:
+                          id: pres_label1
+                          align: OUT_RIGHT_MID
+                          x: 10                  
+                        text_align: CENTER
+                        text_color: 0x000000
+                        text_font: font4
+                    - label:
+                        id: pres_label3
+                        text: "hPa"   
+                        align_to:
+                          id: pres_label2
+                          align: OUT_RIGHT_MID
+                          x: 30                
+                        text_align: CENTER
+                        text_color: 0x000000
+    - id: config_page
+      on_swipe_right:
+        then:
+          - lvgl.page.show: home_page
+      
+      widgets:
+        - obj:
+            align: TOP_MID
+            styles: header_footer
+            widgets:
+              - label:
+                  text: ";polmos config"
+                  align: CENTER
+                  text_align: CENTER
+                  text_color: 0xFFFFFF
+        - obj:
+            
+            y: 52
+            x: 10
+            #align: CENTER
+            height: 240
+            width: 460
+            bg_opa: TRANSP
+            pad_all: 0
+            border_width: 2
+            border_color: black
+            bg_color: 0xFFFFFF
+            widgets:
+                - label:
+                    align: TOP_MID
+                    text: "network info:"                     
+                    text_align: CENTER
+                    text_color: red
+                - obj:
+                    id: info_obj
+                    bg_opa: TRANSP
+                    border_width: 0
+                    height: 230
+                    width: 300
+                    widgets:
+                      
+                      - label:
+                          y: 5
+                          x: 0
+                          id: ip_label1
+                          text: "ip:"                     
+                          #text_align: CENTER
+                          text_color: 0x000000                       
+                      - label:
+                          id: ip_label2
+                          width: 150
+                          long_mode: SCROLL_CIRCULAR
+                          text: "---.---.---.---"   
+                          align_to:
+                            id: ip_label1
+                            align: OUT_RIGHT_MID
+                            x: 5                  
+                          text_align: CENTER
+                          text_color: 0x000000
+                          text_font: font4
+                
+                      - label:
+                          align_to:
+                            id: ip_label1
+                            align: OUT_BOTTOM_LEFT
+                          id: mac_label1
+                          text: "mac:"                     
+                          #text_align: CENTER
+                          text_color: 0x000000                       
+                      - label:
+                          id: mac_label2
+                          long_mode: SCROLL_CIRCULAR
+                          width: 150
+                          text: "--:--:--:--:--:--"   
+                          align_to:
+                            id: mac_label1
+                            align: OUT_RIGHT_MID
+                            x: 5                  
+                          text_align: CENTER
+                          text_color: 0x000000
+                          text_font: font1
+                      - label:
+                          align_to:
+                            id: mac_label1
+                            align: OUT_BOTTOM_LEFT
+                          id: ssid_label1
+                          text: "ssid:"                     
+                          #text_align: CENTER
+                          text_color: 0x000000                       
+                      - label:
+                          id: ssid_label2
+                          long_mode: SCROLL_CIRCULAR
+                          width: 150
+                          text: "---------"   
+                          align_to:
+                            id: ssid_label1
+                            align: OUT_RIGHT_MID
+                            x: 5                  
+                          #text_align: CENTER
+                          text_color: 0x000000
+                          text_font: font1
+                      - label:
+                          align_to:
+                            id: ssid_label1
+                            align: OUT_BOTTOM_LEFT
+                          id: server_ha_label1
+                          text: "server:"                     
+                          #text_align: CENTER
+                          text_color: 0x000000  
+                      - label:
+                          id: server_ha_label2
+                          long_mode: SCROLL_CIRCULAR
+                          width: 150
+                          text: "${ha_ip}"   
+                          align_to:
+                            id: server_ha_label1
+                            align: OUT_RIGHT_MID
+                            x: 5                  
+                          text_align: CENTER
+                          text_color: 0x000000
+                          text_font: font1
+                      - label:
+                          align_to:
+                            id: server_ha_label1
+                            align: OUT_BOTTOM_LEFT
+                          id: mqtt_label1                          
+                          text: "mqtt:"                     
+                          #text_align: CENTER
+                          text_color: 0x000000  
+                      - label:
+                          id: mqtt_label2
+                          #long_mode: SCROLL_CIRCULAR
+                          #width: 150
+                          text: "---------"   
+                          align_to:
+                            id: mqtt_label1
+                            align: OUT_RIGHT_MID
+                            x: 5                  
+                          #text_align: CENTER
+                          text_color: 0x000000
+                          text_font: font1
+                - label:
+                    align_to:
+                            id: info_obj
+                            align: OUT_RIGHT_MID
+                    id: wifi_strength
+                    text: "\U000F05AA"
+                    text_font: font3                     
+                    text_align: CENTER
+                    text_color: blue
+                - label:
+                    align_to:
+                            id: wifi_strength
+                            align: OUT_BOTTOM_MID
+                    id: wifi_strength2
+                    text: "---"
+                    text_font: font1                     
+                    text_align: CENTER
+                    text_color: black
+        - obj:
+            
+            y: 294
+            x: 10
+            #align: CENTER
+            height: 100
+            width: 460
+            bg_opa: TRANSP
+            pad_all: 0
+            border_width: 2
+            border_color: black
+            bg_color: 0xFFFFFF
+            widgets:
+                - label:
+                    align: TOP_MID
+                    text: "esphome info:"                     
+                    text_align: CENTER
+                    text_color: red
+                - obj:
+                    
+                    bg_opa: TRANSP
+                    border_width: 0
+                    height: 95
+                    width: 455
+                    widgets:
+                      
+                      - label:
+                          y: 10
+                          x: 0
+                          id: version_label1
+                          text: "version:"                     
+                          #text_align: CENTER
+                          text_color: 0x000000                       
+                      - label:
+                          id: version_label2
+                          #width: 150
+                          #long_mode: SCROLL_CIRCULAR
+                          text: "---.-.-"   
+                          align_to:
+                            id: version_label1
+                            align: OUT_RIGHT_MID
+                            x: 5                  
+                          text_align: CENTER
+                          text_color: 0x000000
+        - obj:
+            
+            y: 396
+            x: 10
+            #align: CENTER
+            height: 400
+            width: 460
+            bg_opa: TRANSP
+            pad_all: 0
+            border_width: 0
+            #border_color: black
+            bg_color: 0xFFFFFF
+            widgets:
+                - label:
+                    align: TOP_MID
+                    text: "config:"                     
+                    text_align: CENTER
+                    text_color: red
+                
+                - label:
+                          y: 60
+                          x: 0
+                          id: wake_label1
+                          text: "wake word:"                     
+                          #text_align: CENTER
+                          text_color: 0x000000                       
+                - switch:
+                    id: wake_label2
+                    width: 60
+                    height: 30                           
+                    align_to:
+                      id: wake_label1
+                      align: OUT_RIGHT_MID
+                      x: 60                 
+                - label:
+                    id: bright_label1
+                    text: "brightness:"                                               
+                    text_color: 0x000000  
+                    align_to:
+                      id: wake_label1
+                      align: OUT_BOTTOM_MID
+                      y: 30  
+                - slider:
+                    id: bright_label2
+                    value: !lambda return (${default_brightness} * 100) ;
+                    min_value: 30
+                    max_value: 100
+                    width: 250
+                    height: 30
+                    adv_hittest: false
+                    align_to:
+                      id: bright_label1
+                      align: OUT_RIGHT_MID
+                      x: 30 
+                    on_release:
+                      - light.turn_on:
+                          id: display_backlight
+                          brightness: !lambda return (x / 100);                        
+                
+                - label:
+                    id: spinbox_Screen_timeout1
+                    text: "Screen timeout:"                                               
+                    text_color: 0x000000  
+                    align_to:
+                      id: bright_label1
+                      align: OUT_BOTTOM_MID
+                      y: 50 
+                      x: 30 
+                - obj:
+                    align_to:
+                        id: spinbox_Screen_timeout1
+                        align: OUT_RIGHT_MID
+                        x: 50
+                    layout:
+                        type: FLEX
+                        flex_flow: ROW
+                        flex_align_cross: CENTER
+                    width: SIZE_CONTENT
+                    height: SIZE_CONTENT
+                    bg_opa: TRANSP
+                    pad_all: 0
+                    border_width: 0
+            #border_color: black
+                    bg_color: 0xFFFFFF
+                    widgets:
+                      - button:
+                          id: spin_down
+                          on_click:
+                            - lvgl.spinbox.decrement: spinbox_Screen_timeout2
+                          widgets:
+                            - label:
+                                text: "-"
+                      - spinbox:
+                          id: spinbox_Screen_timeout2
+                          align: CENTER
+                          text_align: CENTER
+                          text_font: font1
+                          width: 70
+                          height: 60
+                          value: 60
+                          range_from: 20
+                          range_to: 180
+                          selected_digit: 1
+                          rollover: false
+                          digits: 3
+                      
+                          on_value:
+                            then:
+                              - number.set:
+                                  id: display_timeout
+                                  value: !lambda return x;
+                      - button:
+                          id: spin_up
+                          on_click:
+                            - lvgl.spinbox.increment: spinbox_Screen_timeout2
+                          widgets:
+                            - label:
+                                text: "+"
+    
+    
+    
+    - id: meteo_page
+      on_swipe_right:
+        then:
+          - lvgl.page.show: home_page
+      widgets:
+        - obj:
+            align: TOP_MID
+            styles: header_footer
+            widgets:
+              - label:
+                  text: ";polm meteo"
+                  align: CENTER
+                  text_align: CENTER
+                  text_color: 0xFFFFFF

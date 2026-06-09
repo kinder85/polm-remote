@@ -1,0 +1,147 @@
+text_sensor:
+  - platform: homeassistant
+    id: weather_sun
+    
+    entity_id: ${weather_entity}
+    on_value:
+      then:
+        
+              - lvgl.label.update:
+                  id: weather_label
+                  text: !lambda |-
+                    std::string condition = id(weather_sun).state;
+                    if (condition == "sunny") return "\U000F0599";
+                    else if (condition == "clear-night") return "\U000F0594";
+                    else if (condition == "partlycloudy") return "\U000F0595";
+                    else if (condition == "cloudy") return "\U000F0590";
+                    else if (condition == "rainy") return "\U000F0597";
+                    else if (condition == "pouring") return "\U000F0596";
+                    else if (condition == "snowy") return "\U000F0598";
+                    else if (condition == "snowy-rainy") return "\U000F067F";
+                    else if (condition == "lightning") return "\U000F0593";
+                    else if (condition == "lightning-rainy") return "\U000F067E";
+                    else if (condition == "fog") return "\U000F0591";
+                    else if (condition == "hail") return "\U000F0592";
+                    else if (condition == "windy") return "\U000F059D";
+                    else if (condition == "windy-variant") return "\U000F059E";
+                    else return "--";  // Fallback       
+             
+                  text_color: !lambda |-
+                    std::string condition = id(weather_sun).state;
+                    if (condition == "sunny") return lv_color_hex(0xF5E427);
+                    else if (condition == "clear-night") return lv_color_hex(0xB5B57B);
+                    else if (condition == "partlycloudy") return lv_color_hex(0xBABAB5);
+                    else if (condition == "cloudy") return lv_color_hex(0x8EA38F);
+                    else if (condition == "rainy") return lv_color_hex(0x808077);
+                    else if (condition == "pouring") return lv_color_hex(0x52524E);
+                    else if (condition == "snowy") return lv_color_hex(0xCCCCC2);
+                    else if (condition == "snowy-rainy") return lv_color_hex(0xABABA2);
+                    else if (condition == "lightning") return lv_color_hex(0xABAB74);
+                    else if (condition == "lightning-rainy") return lv_color_hex(0x82824B);
+                    else if (condition == "fog") return lv_color_hex(0xC9C9BF);
+                    else if (condition == "hail") return lv_color_hex(0xC9C9BF);
+                    else if (condition == "windy") return lv_color_hex(0x6C946E);
+                    else if (condition == "windy-variant") return lv_color_hex(0x49754B);
+                    else return lv_color_hex(0xF5E427);  // Fallback 
+              - lvgl.widget.update:
+                  id: weather_container
+                  bg_color: !lambda |-
+                    std::string condition = id(weather_sun).state;
+                    if (condition == "sunny") return lv_color_hex(0x00FFC9);
+                    else if (condition == "clear-night") return lv_color_hex(0x038267);
+                    else if (condition == "partlycloudy") return lv_color_hex(0x00FFC9);
+                    else if (condition == "cloudy") return lv_color_hex(0x8EA38F);
+                    else if (condition == "rainy") return lv_color_hex(0x808077);
+                    else if (condition == "pouring") return lv_color_hex(0x000000);
+                    else if (condition == "snowy") return lv_color_hex(0xCCCCC2);
+                    else if (condition == "snowy-rainy") return lv_color_hex(0xABABA2);
+                    else if (condition == "lightning") return lv_color_hex(0xC5D149);
+                    else if (condition == "lightning-rainy") return lv_color_hex(0xBCC286);
+                    else if (condition == "fog") return lv_color_hex(0xE0D5D5);
+                    else if (condition == "hail") return lv_color_hex(0xC9C9BF);
+                    else if (condition == "windy") return lv_color_hex(0x00FFC9);
+                    else if (condition == "windy-variant") return lv_color_hex(0x00FFC9);
+                    else return lv_color_hex(0xFFFFFF);  // Fallback 
+                  bg_opa: !lambda |-
+                    std::string condition = id(weather_sun).state;
+                    if (condition == "sunny") return 0.6;
+                    else if (condition == "clear-night") return 60;
+                    else if (condition == "partlycloudy") return 30;
+                    else if (condition == "cloudy") return 10;
+                    else if (condition == "rainy") return 10;
+                    else if (condition == "pouring") return 10;
+                    else if (condition == "snowy") return 10;
+                    else if (condition == "snowy-rainy") return 10;
+                    else if (condition == "lightning") return 20;
+                    else if (condition == "lightning-rainy") return 10;
+                    else if (condition == "fog") return 10;
+                    else if (condition == "hail") return 10;
+                    else if (condition == "windy") return 30;
+                    else if (condition == "windy-variant") return 30;
+                    else return 10;  // Fallback            
+sensor:
+  - platform: homeassistant
+    id: weather_temp
+    entity_id: ${weather_entity}
+    attribute: temperature
+    on_value:   
+      - lvgl.label.update:
+            id: temp_label2
+            text: !lambda return str_sprintf("%.0f", id(weather_temp).state);
+      - if:
+          condition:
+              lambda: !lambda 'return x >= 17 && x <= 24;'
+          then:
+              - lvgl.label.update:
+                  id: temp_label2
+                  text_color: 0x00FF00
+          else:
+            - if:
+                condition:
+                    lambda: !lambda 'return x >= 28 || x <= 10;'
+                then: 
+                  - lvgl.label.update:
+                      id: temp_label2
+                      text_color: 0xFF1100
+                else: 
+                  - lvgl.label.update:
+                      id: temp_label2
+                      text_color: 0xFF7B00
+
+  - platform: homeassistant
+    id: weather_hum
+    entity_id: ${weather_entity}
+    attribute: humidity
+    on_value:   
+      - lvgl.label.update:
+            id: hum_label2
+            text: !lambda return str_sprintf("%.0f", id(weather_hum).state);  
+      - if:
+          condition:
+              lambda: !lambda 'return  x <= 60;'
+          then:
+              - lvgl.label.update:
+                  id: hum_label2
+                  text_color: 0x00FF00
+          else:
+            - if:
+                condition:
+                    lambda: !lambda 'return x >= 90 || x <= 40 ;'
+                then: 
+                  - lvgl.label.update:
+                      id: hum_label2
+                      text_color: 0xFF1100
+                else: 
+                  - lvgl.label.update:
+                      id: hum_label2
+                      text_color: 0xFF7B00
+  - platform: homeassistant
+    id: weather_pres
+    entity_id: ${weather_entity}
+    attribute: pressure
+    on_value:   
+      - lvgl.label.update:
+            id: pres_label2
+            text: !lambda return str_sprintf("%.0f", id(weather_pres).state); 
+
+

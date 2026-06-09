@@ -1,0 +1,51 @@
+substitutions:
+
+
+## Modular version Main P4
+
+## SETTINGS ######################################################################################################################################
+  ha_adress: "http://${ha_ip}:8123"
+  ha_ip: "192.168.10.103"
+
+  default_brightness: "0.7"
+
+  screenwidth:  "480"
+  screenheight: "800"
+  pass: "1234"
+
+  startup_sound: "Home_Connected" # (options are: available, Home_Connected, Home_Connected_Male, Computer_Ready)
+  clock_background_image: "chip" # (options are: clock, hacker, mission, starrysky, waves, tron, chip)
+  #imagemodel: "Gwen" # options are: Gwen
+
+# USE ONLINE OR LOCAL MODEL AND WALLPAPER IMAGES, IMAGES SHOULD BE PLACED IN: homeassistant/www/images/
+  #imagepath: "https://github.com/RealDeco/xiaozhi-esphome/raw/main/images"
+  #imagepath: "http://homeassistant.local:8123/local/images/"
+
+## PRESENCE / MOTION SENSORS ########## IF NOT USING THESE LEAVE THEM ALONE, SCRIPT WILL BREAK WITHOUT ###########################################
+
+  #sensor_labo: "binary_sensor.8266_presense_2_presence"
+  #light_labo: "light.livingroom_all_lights"
+  wled_labo: "light.wleddesk_principal"
+  labo_label: "labo"
+
+  #sensor2_entity: "binary_sensor.esp32s3_1_presence"
+  light_bed: "light.ampoule_salon"
+  bed_label: "bedroom"
+
+  
+  light_salon: "light.tapo_smart_bulb"
+  wled_salon: "light.wled_principal_2"
+  salon_label: "salon"
+  hifi_salon: "media_player.raspberrypi"
+  hifi2_salon: "media_player.proto_assist_mdp_assist"
+  hifi_sensor: "sensor.raspberrypi_speaker_remaining"
+  tv_salon: "media_player.192_168_10_145_2"
+  tv_salon2: "media_player.android_tv_192_168_10_157"
+
+
+  weather_entity: "weather.forecast_maison"
+  
+  tag_gaming: "43-27-26-29"
+  tag_hifi: "04-42-A3-36-5F-61-80"
+  tag_clef: "2D-1D-F4-2C"
+  tag_tv: "54-9D-C3-DC"
